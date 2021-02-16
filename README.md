@@ -1,3 +1,5 @@
+<a href="https://pastepixel.com/"><img src="https://pastepixel.com/assets/img/logo_h_dark.svg" title="PastePixel" width="300"/></a>
+
 # PastePixel OpenAPI 3 definition
 In this repository you find the OpenAPI definition of the public PastePixel API. We have written our specification in
 a YAML file. Feel free to download the YAML file and convert it to JSON if you want to use JSON.
