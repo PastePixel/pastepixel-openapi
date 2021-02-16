@@ -8,6 +8,7 @@ For more information about the OpenAPI standard you can visit their [website](ht
 You can use the OpenAPI definition in either of the following ways:
 - Import it to [Postman](https://www.postman.com/)
 - Use an OpenAPI UI renderer to view the documentation (e.g. [Swagger-UI](https://swagger.io/tools/swagger-ui/))
+    - View on SwaggerHub: [https://app.swaggerhub.com/apis-docs/pastepixel/PastePixel-API/v1](https://app.swaggerhub.com/apis-docs/pastepixel/PastePixel-API/v1)
 
 ## Support
 If you need any support, have questions, comments or feature requests: you can [contact us](https://pastepixel.com/contact).
