@@ -1,0 +1,788 @@
+openapi: 3.0.3
+
+info:
+  title: PastePixel API
+  description: |
+    ## Introduction
+    Welcome to the official PastePixel API documentation. In order to use the PastePixel API you must have a premium,
+    starter or early bird account. Feel free to check out our [pricing](https://pastepixel.com/pricing) page to see all
+    our plans.
+
+    Using this API, you are able to integrate PastePixel into your own applications and automatically track mails. This
+    API allows you to create new mail trackings, tracking pixels and trackable URLs. We also provide endpoint to delete
+    your mail tracking or trackable URL.
+
+    How to create a mail tracking with a pixel and trackable URLs? Structurally, you first create a new mail tracking
+    with a name, for example "Newsletter". This will then be shown on your dashboard. Then, you can add a tracking pixel
+    to your mail tracking. This will give you an URL that you then can embed in your e-mails. Note that a mail tracking
+    can only have zero or one tracking pixel. Then you can add up to twenty trackable URLs to your mail tracking. See
+    the shown figure for a generic UML diagram of how a mail tracking structurally is composed:
+
+    <img src="https://pastepixel.com/images/85f8647a-f5f8-4fe9-8134-67b55249c89e.png" width="400"/>
+
+    ---
+
+    *Note: There is a rate limit of 30 requests per minute.*
+
+    ---
+
+    We are working continuously on improving our API. If you have any comments, questions or features requests, please
+    let us know.
+  version: v1
+  termsOfService: https://pastepixel.com/terms-and-conditions
+  contact:
+    name: PastePixel support
+    email: hello@pastepixel.com
+    url: https://pastepixel.com/contact
+
+externalDocs:
+  description: API-documentation on the PastePixel website.
+  url: https://pastepixel.com/api-documentation
+
+servers:
+  - url: https://pastepixel.com/api/v1
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: query
+      name: key
+  schemas:
+    BaseResponse:
+      description: Base response of all requests. It always has a `success` and `msg` (message) property.
+      properties:
+        success:
+          description: Indication on whether the request was successful.
+          type: boolean
+        msg:
+          description: Additional message about the response. For example, the reason of failure.
+          type: string
+  responses:
+    InternalServerError:
+      description: An unexpected server error has occured. Please contact us if this keeps happening.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BaseResponse'
+          example:
+            success: false
+            msg: Server error.
+    RateLimitExceeded:
+      description: The API rate limit of 30 requests per minute has exceeded.
+      headers:
+        Retry-After:
+          description: Time in seconds to wait before performing another request.
+          schema:
+            type: integer
+            example: 60
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BaseResponse'
+          example:
+            success: false
+            msg: Exceeded rate limit of 30 requests per minute.
+
+  examples:
+    MissingJsonBody:
+      summary: Missing JSON-body
+      description: Response when the client does not provide a JSON-body with the request.
+      value:
+        success: false
+        message: Missing JSON-body.
+    UserNotPremium:
+      summary: User not premium
+      description: >
+        The subscription plan of the user associated with the API key, does not allow the user to use the API.
+      value:
+        success: false
+        message: You must be premium in order to use the API.
+    MissingApiKey:
+      summary: Missing API-key
+      description: >
+        Missing the API-key needed to authenticate through the API.
+      value: ''
+
+security:
+  - ApiKeyAuth: [ ]
+
+paths:
+  /mail-tracking:
+    post:
+      summary: Creates a new empty mail tracking without tracking pixel or tracking URLs.
+      tags:
+        - Mail tracking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: >
+                    The name of your new mail tracking. This name can be found on your dashboard after creating the mail
+                    tracking.
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                  example: Newsletter
+                trackIpAddresses:
+                  description: >
+                    Privacy setting on whether the tracking pixel and URLs should track IP-addresses. When disabled, the
+                    mail tracking page also won't render the "Location" chart. This setting cannot be changed after
+                    creating the mail tracking.
+                  type: boolean
+                  default: true
+                  example: true
+                trackUserAgents:
+                  description: >
+                    Privacy setting on whether the tracking pixel and URLs should track user-agents. When disabled, the
+                    mail tracking page also won't render the "Devices" chart. This setting cannot be changed after
+                    creating the mail tracking.
+                  type: boolean
+                  default: true
+                  example: true
+                trackDateTimes:
+                  description: >
+                    Privacy setting on whether the tracking pixel and URLs should track the date/times on which they got
+                    triggered. When disabled, the mail tracking page also won't show the "Times opened" and "Time of
+                    day" charts. This setting cannot be changed after creating the mail tracking.
+                  type: boolean
+                  default: true
+                  example: true
+              required:
+                - name
+      responses:
+        '201':
+          description: >
+            Returns a 201 Created response with a JSON-body that contains the ID of your newly created mail tracking.
+            This ID can later be used to delete your mail tracking.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    description: Indication whether the mail tracking was successfully created.
+                    type: boolean
+                  msg:
+                    type: object
+                    properties:
+                      id:
+                        description: ID of the newly created mail tracking.
+                        type: integer
+                        example: 123
+                      name:
+                        description: Name of the newly created mail tracking.
+                        type: string
+                        example: Newsletter
+          links:
+            DeleteMailTrackingByMailTrackingId:
+              operationId: deleteMailTracking
+              parameters:
+                id: '$response.body#/msg/id'
+              description: >
+                The `id` value returned in the response can be used as the `id` parameter in
+                `DELETE /mail-tracking/{id}`.
+            CreateTrackingPixel:
+              operationId: createTrackingPixel
+              parameters:
+                id: '$response.body#/msg/id'
+              description: >
+                The `id` value returned in the response can be used as the `id` parameter in
+                `POST /mail-tracking/{id}/pixel`.
+            CreateTrackingUrl:
+              operationId: createTrackingUrl
+              parameters:
+                id: '$response.body#/msg/id'
+              description: >
+                The `id` value returned in the response can be used as the `id` parameter in
+                `POST /mail-tracking/{id}/url`.
+        '400':
+          description: 400 Bad requests are returned when an invalid request from the client side has been made.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              examples:
+                Missing JSON-body:
+                  $ref: '#/components/examples/MissingJsonBody'
+                Creation limit reached:
+                  description: >
+                    Response when the user, whose API-key is used, has reached its limit of the number of mail
+                    tracking that can be created (per day).
+                  value:
+                    success: false
+                    message: Mail tracking creation limit reached.
+                Empty name provided:
+                  description: >
+                    Response when no name is provided or the provided name is empty (or only contains empty spaces).
+                  value:
+                    success: false
+                    message: Invalid name provided.
+                Provided name too long:
+                  description: Response when the provided name is longer than the maximum allowed characters of 64.
+                  value:
+                    success: false
+                    message: Provided name is too long. The maximum length is 64 characters.
+        '401':
+          description: >
+            401 Unauthorized responses are returned when a client tries to perform an operation that isn't allowed by
+            that user. Requests are also unauthorized when an invalid API-key is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              examples:
+                User not allowed to use API:
+                  $ref: '#/components/examples/UserNotPremium'
+                Missing API-key:
+                  $ref: '#/components/examples/MissingApiKey'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /mail-tracking/{id}/pixel:
+    post:
+      summary: >
+        Creates a new tracking pixel within a parent mail tracking. You can create only one tracking pixel within a
+        mail tracking.
+      operationId: createTrackingPixel
+      tags:
+        - Mail tracking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the existing mail tracking where you want to add a tracking pixel to.
+          schema:
+            type: integer
+            example: 123
+      responses:
+        '201':
+          description: >
+            Returns a 201 Created response with a JSON-body that contains the ID, unique token of your tracking pixel
+            and the URL of the tracking pixel, that you should embed as an image in your outgoing e-mails.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    description: Indication on whether a new tracking pixel has been generated.
+                    type: boolean
+                    example: true
+                  msg:
+                    description: Contains data about the newly generated tracking pixel.
+                    type: object
+                    properties:
+                      id:
+                        description: ID of the newly generated tracking pixel.
+                        type: integer
+                        example: 144
+                      token:
+                        description: >
+                          Unique token of the generated tracking pixel. This is also the name of the tracking pixel
+                          image.
+                        type: string
+                        example: fbAQfWDabnHgQNwf4CFZ.png
+                      url:
+                        description: >
+                          The URL to the tracking pixel that you should embed in your outgoing emails.
+                        type: string
+                        example: https://pastepixel.com/image/fbAQfWDabnHgQNwf4CFZ.png
+          links:
+            GetPixelInformationByPixelId:
+              operationId: getTrackingPixelInformation
+              parameters:
+                id: '$response.body#/msg/id'
+              description: >
+                The `id` value returned in the response can be used as the `id` parameter in
+                `GET /pixel/{id}`.
+        '400':
+          description: 400 Bad requests are returned when an invalid request from the client side has been made.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              examples:
+                Mail tracking already has tracking pixel:
+                  description: >
+                    Response when the mail tracking to which you want to add a tracking pixel already has a tracking
+                    pixel. A mail tracking can only have one tracking pixel at most.
+                  value:
+                    success: false
+                    message: Mail tracking already has one pixel.
+        '401':
+          description: >
+            401 Unauthorized responses are returned when a client tries to perform an operation that isn't allowed by
+            that user. Requests are also unauthorized when an invalid API-key is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              examples:
+                User does not own mail tracking or mail tracking does not exist:
+                  description: >
+                    The given mail tracking ID (given as the request parameter) references to either a mail tracking
+                    that is not owned by the user corresponding to the API-key or the mail tracking does not exist at
+                    all.
+                  value:
+                    success: false
+                    message: Unauthorized to add tracking pixel to this mail tracking.
+                User not allowed to use API:
+                  $ref: '#/components/examples/UserNotPremium'
+                Missing API-key:
+                  $ref: '#/components/examples/MissingApiKey'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /mail-tracking/{id}/url:
+    post:
+      summary: >
+        Creates a new tracking URL within a parent mail tracking. You can create multiple tracking URLs within one mail
+        tracking.
+      operationId: createTrackingUrl
+      tags:
+        - Mail tracking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the existing mail tracking where you want to add a tracking URL to.
+          schema:
+            type: integer
+            example: 123
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  description: >
+                    The full URL of the web page that the trackable URL should redirect to.
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                  example: https://mywebsite.com/
+              required:
+                - url
+      responses:
+        '201':
+          description: >
+            Returns a 201 Created response with a JSON-body containing the trackable URL. This trackable URL is the URL
+            that you should put in your e-mail instead of the URL where is redirects to. The JSON-body also contains the
+            unique ID of the trackable URL, this ID can be used to delete a trackable URL.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    description: Indication on whether a new tracking URL has been generated.
+                    type: boolean
+                    example: true
+                  msg:
+                    description: Contains data about the newly generated tracking URL.
+                    type: object
+                    properties:
+                      id:
+                        description: ID of the newly generated tracking URL.
+                        type: integer
+                        example: 235
+                      token:
+                        description: Unique token of the tracking URL. This token is contained in the tracking URL.
+                        type: string
+                        example: ZHMhkAbySWXFQqdpB7PQ
+                      trackableUrl:
+                        description: >
+                          This is the tracking URL that you should add to your emails. This URL redirects to the
+                          `originalUrl`.
+                        type: string
+                        example: https://pastepixel.com/url/ZHMhkAbySWXFQqdpB7PQ
+                      originalUrl:
+                        description: This is the URL where the tracking URL redirects to.
+                        type: string
+                        example: https://mywebsite.com/
+          links:
+            GetUrlInformationByUrlId:
+              operationId: getTrackingUrlInformation
+              parameters:
+                id: '$response.body#/msg/id'
+              description: >
+                The `id` value returned in the response can be used as the `id` parameter in
+                `GET /url/{id}`.
+            DeleteUrlByUrlId:
+              operationId: deleteTrackingUrl
+              parameters:
+                id: '$response.body#/msg/id'
+              description: >
+                The `id` value returned in the response can be used as the `id` parameter in
+                `DELETE /url/{id}`.
+        '400':
+          description: 400 Bad requests are returned when an invalid request from the client side has been made.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              examples:
+                Missing JSON-body:
+                  $ref: '#/components/examples/MissingJsonBody'
+                Empty url provided:
+                  description: >
+                    Response when no `url` is provided or the provided `url` is empty (or only contains empty spaces).
+                  value:
+                    success: false
+                    message: Invalid url provided.
+                Provided name too long:
+                  description: Response when the provided `url` is longer than the maximum allowed characters of 128.
+                  value:
+                    success: false
+                    message: Provided url is too long. The maximum length is 128 characters.
+        '401':
+          description: >
+            401 Unauthorized responses are returned when a client tries to perform an operation that isn't allowed by
+            that user. Requests are also unauthorized when an invalid API-key is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              examples:
+                User does not own mail tracking or mail tracking does not exist:
+                  description: >
+                    The given mail tracking ID (given as the request parameter) references to either a mail tracking
+                    that is not owned by the user corresponding to the API-key or the mail tracking does not exist at
+                    all.
+                  value:
+                    success: false
+                    message: Unauthorized to add trackable url to this mail tracking.
+                User not allowed to use API:
+                  $ref: '#/components/examples/UserNotPremium'
+                Missing API-key:
+                  $ref: '#/components/examples/MissingApiKey'
+        '403':
+          description: >
+            403 Forbidden responses are returned when a client tries to perform an operation but the user isn't able to
+            complete the request, possibly due to a limitation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              examples:
+                Creation limit reached:
+                  description: >
+                    The mail tracking to which you want to add the URL already has reached its maximum number of allowed
+                    URLs in a mail tracking.
+                  value:
+                    success: false
+                    message: Mail tracking URLs limit reached.
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /mail-tracking/{id}:
+    delete:
+      summary: Deletes an existing mail tracking with its tracking pixel and tracking URLs.
+      operationId: deleteMailTracking
+      tags:
+        - Mail tracking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the mail tracking that you want to delete.
+          schema:
+            type: integer
+            example: 123
+      responses:
+        '200':
+          description: >
+            Returns a 200 OK response with a JSON-body indicating that the mail tracking has successfully been deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    description: Indication whether the mail tracking was successfully deleted.
+                    type: boolean
+                    example: true
+                  msg:
+                    description: Additional message about the result of the request.
+                    type: string
+                    example: Mail tracking successfully deleted.
+        '401':
+          description: >
+            401 Unauthorized responses are returned when a client tries to perform an operation that isn't allowed by
+            that user. Requests are also unauthorized when an invalid API-key is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              examples:
+                User does not own mail tracking or it does not exist:
+                  description: >
+                    The given mail tracking ID (given as the request parameter) references to either a mail tracking
+                    that is not owned by the user corresponding to the API-key or the mail tracking does not exist at
+                    all, thus the user cannot delete it.
+                  value:
+                    success: false
+                    message: Unauthorized to delete mail tracking.
+                User not allowed to use API:
+                  $ref: '#/components/examples/UserNotPremium'
+                Missing API-key:
+                  $ref: '#/components/examples/MissingApiKey'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /pixel/{id}:
+    get:
+      summary: >
+        Returns information about a tracking pixel, includes the number of times the tracking pixel is opened.
+      operationId: getTrackingPixelInformation
+      tags:
+        - Tracking pixel
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of an existing tracking pixel. This is not the same ID as the mail tracking ID.
+          schema:
+            type: integer
+            example: 123
+      responses:
+        '200':
+          description: >
+            Returns a 200 OK response with a JSON-body that contains information about the tracking pixel.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    description: Indication on whether the tracking pixel information got retrieved successfully.
+                    type: boolean
+                    example: true
+                  msg:
+                    description: Contains the information data about the tracking pixel.
+                    type: object
+                    properties:
+                      id:
+                        description: ID of the tracking pixel where you retrieved the information for.
+                        type: integer
+                        example: 123
+                      created:
+                        description: Timestamp of the creation date of the pixel (milliseconds since epoch).
+                        type: integer
+                        format: int64
+                        example: 1611599175410
+                      token:
+                        description: >
+                          The unique token of the tracking pixel. This is also the name of the tracking pixel image.
+                        type: string
+                        example: fbAQfWDabnHgQNwf4CFZ.png
+                      url:
+                        description: >
+                          The URL to the tracking pixel that you should embed in your outgoing emails.
+                        type: string
+                        example: https://pastepixel.com/image/fbAQfWDabnHgQNwf4CFZ.png
+                      timesOpened:
+                        description: >
+                          The number of times the tracking pixel has been triggered, without the blacklisted
+                          IP-addresses.
+                        type: integer
+                        example: 50
+                      mailTrackingId:
+                        description: >
+                          The ID of the parent mail tracking.
+                        type: integer
+                        example: 465
+                      mailTrackingUrl:
+                        description: >
+                          The URL of the mail tracking dashboard, where you can view all data and charts collected by
+                          the pixel.
+                        type: string
+                        example: https://pastepixel.com/tracking/465
+        '401':
+          description: >
+            401 Unauthorized responses are returned when a client tries to perform an operation that isn't allowed by
+            that user. Requests are also unauthorized when an invalid API-key is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              examples:
+                User does not own tracking pixel or it does not exist:
+                  description: >
+                    The given tracking pixel ID (given as the request parameter) references to either a tracking pixel
+                    that is not owned by the user corresponding to the API-key or the tracking pixel does not exist at
+                    all.
+                  value:
+                    success: false
+                    message: Unauthorized to view this tracking pixel.
+                User not allowed to use API:
+                  $ref: '#/components/examples/UserNotPremium'
+                Missing API-key:
+                  $ref: '#/components/examples/MissingApiKey'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /url/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of an existing tracking URL. This is not the same ID as the mail tracking ID.
+        schema:
+          type: integer
+          example: 756
+    get:
+      summary: >
+        Returns information about the tracking URL, includes the number of times the tracking URL is opened.
+      operationId: getTrackingUrlInformation
+      tags:
+        - Tracking URL
+      responses:
+        '200':
+          description: >
+            Returns a 200 OK respones with a JSON-body that contains information about the tracking URL.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    description: Indication on whether the tracking URL information got retrieved successfully.
+                    type: boolean
+                    example: true
+                  msg:
+                    description: Contains the information data about the tracking URL.
+                    type: object
+                    properties:
+                      id:
+                        description: ID of the tracking URL where you retrieved the information for.
+                        type: integer
+                        example: 756
+                      created:
+                        description: Timestamp of the creation date of the URL (milliseconds since epoch).
+                        type: integer
+                        format: int64
+                        example: 1611599175410
+                      token:
+                        description: >
+                          The unique token of the tracking URL. This is also contained in the `trackableUrl`.
+                        type: string
+                        example: fbAQfWDabnHgQNwf4Cqw
+                      trackableUrl:
+                        description: >
+                          The url of the tracking link (contains the token), this url redirects to the `originalUrl`
+                          and tracks its opens.
+                        type: string
+                        example: https://pastepixel.com/image/fbAQfWDabnHgQNwf4Cqw
+                      originalUrl:
+                        description: >
+                          The URL where the `trackableUrl` redirects to.
+                        type: string
+                        example: https://my-website.com/
+                      timesOpened:
+                        description: >
+                          The number of times the tracking URL has been opened, without the blacklisted IP-addresses.
+                        type: integer
+                        example: 89
+                      mailTrackingId:
+                        description: >
+                          The ID of the parent mail tracking.
+                        type: integer
+                        example: 465
+                      mailTrackingUrl:
+                        description: >
+                          The URL of the mail tracking dashboard, where you can view all data and charts collected by
+                          the URL.
+                        type: string
+                        example: https://pastepixel.com/tracking/465
+        '401':
+          description: >
+            401 Unauthorized responses are returned when a client tries to perform an operation that isn't allowed by
+            that user. Requests are also unauthorized when an invalid API-key is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              examples:
+                User does not own tracking URL or it does not exist:
+                  description: >
+                    The given tracking URL ID (given as the request parameter) references to either a tracking URL
+                    that is not owned by the user corresponding to the API-key or the tracking URL does not exist at
+                    all.
+                  value:
+                    success: false
+                    message: Unauthorized to view this tracking url.
+                User not allowed to use API:
+                  $ref: '#/components/examples/UserNotPremium'
+                Missing API-key:
+                  $ref: '#/components/examples/MissingApiKey'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      summary: >
+        Deletes a trackable URL and all of its tracked data.
+      operationId: deleteTrackingUrl
+      tags:
+        - Tracking URL
+      responses:
+        '200':
+          description: >
+            Returns a 200 OK response with a JSON-body indicating that the trackable URL has successfully been deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    description: Indication on whether the delete operation was successful.
+                    type: boolean
+                    example: true
+                  msg:
+                    description: Additional message about the result of the delete request.
+                    type: string
+                    example: Trackable url successfully deleted.
+        '401':
+          description: >
+            401 Unauthorized responses are returned when a client tries to perform an operation that isn't allowed by
+            that user. Requests are also unauthorized when an invalid API-key is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              examples:
+                User does not own tracking URL or it does not exist:
+                  description: >
+                    The given tracking URL ID (given as the request parameter) references to either a tracking URL
+                    that is not owned by the user corresponding to the API-key or the tracking URL does not exist at
+                    all. Thus, the user cannot delete it.
+                  value:
+                    success: false
+                    message: Unauthorized to delete this trackable url.
+                User not allowed to use API:
+                  $ref: '#/components/examples/UserNotPremium'
+                Missing API-key:
+                  $ref: '#/components/examples/MissingApiKey'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
