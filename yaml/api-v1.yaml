@@ -544,6 +544,157 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
         '500':
           $ref: '#/components/responses/InternalServerError'
+    get:
+      summary: >
+        Returns information about a mail tracking, includes the number of times the tracking pixel and trackable URLs
+        are opened.
+      operationId: getMailTrackingInformation
+      tags:
+        - Mail tracking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the existing mail tracking where you want to view information about.
+          schema:
+            type: integer
+            example: 465
+      responses:
+        '200':
+          description: >
+            Returns a 200 OK response with a JSON-body containing information about the mail tracking.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    description: Indication whether the mail tracking information was successfully retrieved.
+                    type: boolean
+                    example: true
+                  msg:
+                    description: Retrieve mail tracking information (including tracking pixel and trackable URLs).
+                    type: object
+                    properties:
+                      id:
+                        description: ID of the mail tracking where you retrieved the information for.
+                        type: integer
+                        example: 465
+                      created:
+                        description: Timestamp of the creation date of the mail tracking (milliseconds since epoch).
+                        type: integer
+                        format: int64
+                        example: 1611599175410
+                      mailTrackingUrl:
+                        description: >
+                          The URL to the PastePixel dashboard page
+                        type: string
+                        example: https://pastepixel.com/tracking/465
+                      name:
+                        description: >
+                          The name of the mail tracking
+                        type: string
+                        example: Newsletter
+                      privacySettings:
+                        description: >
+                          Privacy settings set the for mail tracking (immutable).
+                        type: object
+                        properties:
+                          trackIpAddresses:
+                            description: Whether the tracking pixel and trackable URLs will track IP-addresses.
+                            type: boolean
+                            example: true
+                          trackUserAgents:
+                            description: Whether the tracking pixel and trackable URLs will track user-agents.
+                            type: boolean
+                            example: true
+                          trackDateTimes:
+                            description: Whether the tracking pixel and trackable URLs will track date & times.
+                            type: boolean
+                            example: true
+                      trackingPixel:
+                        description: >
+                          Information about the tracking pixel associated to this mail tracking.
+                        type: object
+                        properties:
+                          id:
+                            description: ID of the tracking pixel
+                            type: integer
+                            example: 123
+                          created:
+                            description: Timestamp of the creation date of the pixel (milliseconds since epoch).
+                            type: integer
+                            format: int64
+                            example: 1611599175410
+                          token:
+                            description: The unique token of the tracking pixel. This is also the name of the tracking pixel image.
+                            type: string
+                            example: fbAQfWDabnHgQNwf4CFZ.png
+                          url:
+                            description: The URL to the tracking pixel that you should embed in your outgoing emails.
+                            type: string
+                            example: https://pastepixel.com/image/fbAQfWDabnHgQNwf4CFZ.png
+                          timesOpened:
+                            description: The number of times the tracking pixel has been triggered, without the blacklisted IP-addresses.
+                            type: integer
+                            example: 50
+                      trackableUrls:
+                        description: >
+                          Information about the trackable URLs associated to this mail tracking.
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              description: ID of the trackable URL
+                              type: integer
+                              example: 756
+                            created:
+                              description: Timestamp of the creation date of the URL (milliseconds since epoch).
+                              type: integer
+                              format: int64
+                              example: 1611599175410
+                            token:
+                              description: he unique token of the tracking URL. This is also contained in the `trackableUrl`.
+                              type: string
+                              example: fbAQfWDabnHgQNwf4Cqw
+                            trackableUrl:
+                              description: The url of the tracking link (contains the token), this url redirects to the `originalUrl` and tracks its opens.
+                              type: string
+                              example: https://pastepixel.com/url/fbAQfWDabnHgQNwf4Cqw
+                            originalUrl:
+                              description: The URL where the `trackableUrl` redirects to.
+                              type: string
+                              example: https://my-website.com/
+                            timesOpened:
+                              description: The number of times the tracking URL has been opened, without the blacklisted IP-addresses.
+                              type: integer
+                              example: 89
+        '401':
+          description: >
+            401 Unauthorized responses are returned when a client tries to perform an operation that isn't allowed by
+            that user. Requests are also unauthorized when an invalid API-key is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              examples:
+                User does not own mail tracking or it does not exist:
+                  description: >
+                    The given mail tracking ID (given as the request parameter) references to either a mail tracking
+                    that is not owned by the user corresponding to the API-key or the mail tracking does not exist at
+                    all.
+                  value:
+                    success: false
+                    message: Unauthorized to view this mail tracking.
+                User not allowed to use API:
+                  $ref: '#/components/examples/UserNotPremium'
+                Missing API-key:
+                  $ref: '#/components/examples/MissingApiKey'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /pixel/{id}:
     get:
@@ -690,7 +841,7 @@ paths:
                           The url of the tracking link (contains the token), this url redirects to the `originalUrl`
                           and tracks its opens.
                         type: string
-                        example: https://pastepixel.com/image/fbAQfWDabnHgQNwf4Cqw
+                        example: https://pastepixel.com/url/fbAQfWDabnHgQNwf4Cqw
                       originalUrl:
                         description: >
                           The URL where the `trackableUrl` redirects to.
