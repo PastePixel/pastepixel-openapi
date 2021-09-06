@@ -128,6 +128,22 @@ paths:
                   minLength: 1
                   maxLength: 64
                   example: Newsletter
+                enabled:
+                  description: >
+                    Whether data collection is paused or not. When disabled, your tracking pixel and URLs won't collect
+                    any data. You can enable data tracking later on, for example sometime after you have sent out your
+                    email.
+                  type: boolean
+                  default: true
+                  example: true
+                uniqueOpensOnly:
+                  description: >
+                    Whether to collect only unique data. This is based on the IP-address of the tracked data, so a
+                    tracking pixel can then track an IP-address at most one time. Important: If you set this value to
+                    true, then `trackIpAddresses` must also be set to true.
+                  type: boolean
+                  default: false
+                  example: false
                 trackIpAddresses:
                   description: >
                     Privacy setting on whether the tracking pixel and URLs should track IP-addresses. When disabled, the
@@ -586,15 +602,23 @@ paths:
                         format: int64
                         example: 1611599175410
                       mailTrackingUrl:
-                        description: >
-                          The URL to the PastePixel dashboard page
+                        description: The URL to the PastePixel dashboard page.
                         type: string
                         example: https://pastepixel.com/tracking/465
                       name:
-                        description: >
-                          The name of the mail tracking
+                        description: The name of the mail tracking.
                         type: string
                         example: Newsletter
+                      enabled:
+                        description: >
+                          Indication on whether data collection is active or paused.
+                        type: boolean
+                        example: true
+                      uniqueOpensOnly:
+                        description: >
+                          Indication on whether to collect unique opens only (IP-address based).
+                        type: boolean
+                        example: false
                       privacySettings:
                         description: >
                           Privacy settings set the for mail tracking (immutable).
