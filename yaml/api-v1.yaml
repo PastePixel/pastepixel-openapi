@@ -813,6 +813,148 @@ paths:
           $ref: '#/components/responses/RateLimitExceeded'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /pixel/{id}/data:
+    get:
+      summary: >
+        Returns paginated tracked data that is collected by your tracking pixel.
+      operationId: getTrackingPixelData
+      tags:
+        - Tracking pixel
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of an existing tracking pixel. This is not the same ID as the mail tracking ID.
+          schema:
+            type: integer
+            example: 123
+        - name: offset
+          in: query
+          required: false
+          description: Offset for the paginated result. With an offset of 0, you start at the most recent data.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 45000
+            default: 0
+            example: 0
+        - name: limit
+          in: query
+          required: false
+          description: Limit for the paginated result. This is the maximum number of results on the requested page.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+            example: 1
+      responses:
+        '200':
+          description: >
+            Returns a 200 OK response with a JSON-body that contains your tracked data.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    description: Indication on whether the tracking pixel data got retrieved successfully.
+                    type: boolean
+                    example: true
+                  msg:
+                    description: Contains the paginated tracked data
+                    type: object
+                    properties:
+                      timesOpened:
+                        description: The total count of the tracked data, this takes blacklisted IP-addresses in account.
+                        type: integer
+                        minimum: 0
+                        maximum: 45000
+                        example: 200
+                      offset:
+                        description: The given offset of the page.
+                        type: integer
+                        minimum: 0
+                        maximum: 45000
+                        example: 0
+                      limit:
+                        description: The max. number of results on the page.
+                        type: integer
+                        minimum: 1
+                        maximum: 100
+                        example: 1
+                      data:
+                        description: Array that contains all tracked data on the given page.
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            date:
+                              description: Timestamp of when the data was tracked (ms since epoch). This can be null if date & time tracking is off.
+                              type: integer
+                              format: int64
+                              nullable: true
+                              example: 1631113189648
+                            ipAddress:
+                              description: Tracked IP-address. This can be null if IP-address tracking is off.
+                              type: string
+                              nullable: true
+                              example: 255.255.255.255
+                            userAgent:
+                              description: Tracked user-agent. This can be null if user-agent tracking is off.
+                              type: string
+                              nullable: true
+                              example: Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0
+                            customData:
+                              description: Optional tracked custom data. If there was no custom data, then this property is omitted.
+                              type: string
+                              required: false
+                              example: my-tag-1
+        '400':
+          description: >
+            400 Bad Requests responses are returned when a client has given invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              examples:
+                Pagination limit is invalid:
+                  description: >
+                    The given limit is either too low or too high.
+                  value:
+                    success: false
+                    message: Limit must be between 1 and 100.
+                Pagination offset is invalid:
+                  description: >
+                    The given offset is either too low or too high.
+                  value:
+                    success: false
+                    message: Offset must be between 0 and 45000.
+        '401':
+          description: >
+            401 Unauthorized responses are returned when a client tries to perform an operation that isn't allowed by
+            that user. Requests are also unauthorized when an invalid API-key is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              examples:
+                User does not own tracking pixel or it does not exist:
+                  description: >
+                    The given tracking pixel ID (given as the request parameter) references to either a tracking pixel
+                    that is not owned by the user corresponding to the API-key or the tracking pixel does not exist at
+                    all.
+                  value:
+                    success: false
+                    message: Unauthorized to view data.
+                User not allowed to use API:
+                  $ref: '#/components/examples/UserNotPremium'
+                Missing API-key:
+                  $ref: '#/components/examples/MissingApiKey'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /url/{id}:
     parameters:
@@ -953,6 +1095,149 @@ paths:
                   value:
                     success: false
                     message: Unauthorized to delete this trackable url.
+                User not allowed to use API:
+                  $ref: '#/components/examples/UserNotPremium'
+                Missing API-key:
+                  $ref: '#/components/examples/MissingApiKey'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /url/{id}/data:
+    get:
+      summary: >
+        Returns paginated tracked data that is collected by your trackable URL.
+      operationId: getTrackableUrlData
+      tags:
+        - Tracking URL
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of an existing trackable URL. This is not the same ID as the mail tracking ID.
+          schema:
+            type: integer
+            example: 756
+        - name: offset
+          in: query
+          required: false
+          description: Offset for the paginated result. With an offset of 0, you start at the most recent data.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 45000
+            default: 0
+            example: 0
+        - name: limit
+          in: query
+          required: false
+          description: Limit for the paginated result. This is the maximum number of results on the requested page.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+            example: 1
+      responses:
+        '200':
+          description: >
+            Returns a 200 OK response with a JSON-body that contains your tracked data.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    description: Indication on whether the trackable URL data got retrieved successfully.
+                    type: boolean
+                    example: true
+                  msg:
+                    description: Contains the paginated tracked data
+                    type: object
+                    properties:
+                      timesOpened:
+                        description: The total count of the tracked data, this takes blacklisted IP-addresses in account.
+                        type: integer
+                        minimum: 0
+                        maximum: 45000
+                        example: 200
+                      offset:
+                        description: The given offset of the page.
+                        type: integer
+                        minimum: 0
+                        maximum: 45000
+                        example: 0
+                      limit:
+                        description: The max. number of results on the page.
+                        type: integer
+                        minimum: 1
+                        maximum: 100
+                        example: 1
+                      data:
+                        description: Array that contains all tracked data on the given page.
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            date:
+                              description: Timestamp of when the data was tracked (ms since epoch). This can be null if date & time tracking is off.
+                              type: integer
+                              format: int64
+                              nullable: true
+                              example: 1631113189648
+                            ipAddress:
+                              description: Tracked IP-address. This can be null if IP-address tracking is off.
+                              type: string
+                              nullable: true
+                              example: 255.255.255.255
+                            userAgent:
+                              description: Tracked user-agent. This can be null if user-agent tracking is off.
+                              type: string
+                              nullable: true
+                              example: Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0
+                            customData:
+                              description: Optional tracked custom data. If there was no custom data, then this property is omitted.
+                              type: string
+                              required: false
+                              example: my-tag-1
+        '400':
+          description: >
+            400 Bad Requests responses are returned when a client has given invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              examples:
+                Pagination limit is invalid:
+                  description: >
+                    The given limit is either too low or too high.
+                  value:
+                    success: false
+                    message: Limit must be between 1 and 100.
+                Pagination offset is invalid:
+                  description: >
+                    The given offset is either too low or too high.
+                  value:
+                    success: false
+                    message: Offset must be between 0 and 45000.
+        '401':
+          description: >
+            401 Unauthorized responses are returned when a client tries to perform an operation that isn't allowed by
+            that user. Requests are also unauthorized when an invalid API-key is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              examples:
+                User does not own tracking pixel or it does not exist:
+                  description: >
+                    The given trackable URL ID (given as the request parameter) references to either a trackable URL
+                    that is not owned by the user corresponding to the API-key or the trackable URL does not exist at
+                    all.
+                  value:
+                    success: false
+                    message: Unauthorized to view data.
                 User not allowed to use API:
                   $ref: '#/components/examples/UserNotPremium'
                 Missing API-key:
