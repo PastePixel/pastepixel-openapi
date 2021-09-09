@@ -908,7 +908,6 @@ paths:
                             customData:
                               description: Optional tracked custom data. If there was no custom data, then this property is omitted.
                               type: string
-                              required: false
                               example: my-tag-1
         '400':
           description: >
@@ -1199,7 +1198,6 @@ paths:
                             customData:
                               description: Optional tracked custom data. If there was no custom data, then this property is omitted.
                               type: string
-                              required: false
                               example: my-tag-1
         '400':
           description: >
