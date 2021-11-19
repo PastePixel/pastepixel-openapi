@@ -386,7 +386,7 @@ paths:
                     The full URL of the web page that the trackable URL should redirect to.
                   type: string
                   minLength: 1
-                  maxLength: 128
+                  maxLength: 512
                   example: https://mywebsite.com/
               required:
                 - url
@@ -457,11 +457,11 @@ paths:
                   value:
                     success: false
                     message: Invalid url provided.
-                Provided name too long:
-                  description: Response when the provided `url` is longer than the maximum allowed characters of 128.
+                Provided url too long:
+                  description: Response when the provided `url` is longer than the maximum allowed characters of 512.
                   value:
                     success: false
-                    message: Provided url is too long. The maximum length is 128 characters.
+                    message: Provided url is too long.
         '401':
           description: >
             401 Unauthorized responses are returned when a client tries to perform an operation that isn't allowed by
